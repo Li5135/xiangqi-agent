@@ -12,3 +12,6 @@ clickserver/build/
 clickserver/app/build/
 clickserver/.gradle/
 clickserver/local.properties
+
+# IDE
+.idea/
