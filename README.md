@@ -107,13 +107,25 @@ python -m xiangqi_agent.main
 
 ## 构建 ClickServer APK
 
-本地无需 Android SDK，推 GitHub 云端构建（已带 workflow，复用 mobile-app 经验）：
+**本地构建**（你有 Android Studio / SDK 时）：
+
+```bash
+cd clickserver
+# 方式一：命令行（需要 JAVA_HOME 指向 JDK17+，ANDROID_HOME 指向 SDK）
+gradlew assembleDebug          # Windows: gradlew.bat assembleDebug
+# 产物: clickserver/app/build/outputs/apk/debug/app-debug.apk
+
+# 方式二：Android Studio
+#   File → Open → 选 clickserver/ 目录 → Gradle sync → Run ▶ 装到手机
+```
+
+**云端构建**（无需本地环境，已带 workflow，复用 mobile-app 经验）：
 
 ```bash
 git init && git add -A && git commit -m "xiangqi agent"
 git remote add origin git@github.com:<你>/xiangqi-agent.git
 git push -u origin main
-# Actions → build-apk → 下载 artifacts/clickserver.apk
+# Actions → build-apk → 下载 artifacts/clickserver-apk
 ```
 
 APK 安装后：
