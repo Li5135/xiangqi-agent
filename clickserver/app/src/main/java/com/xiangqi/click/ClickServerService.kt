@@ -7,11 +7,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpServer
+import fi.iki.elonen.NanoHTTPD
 import org.json.JSONObject
-import java.net.InetSocketAddress
-import java.util.concurrent.Executors
 
 /**
  * 无障碍点击服务：在 127.0.0.1:8123 提供 HTTP 接口，
@@ -26,6 +23,53 @@ class ClickServerService : AccessibilityService() {
     private var server: HttpServer? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    /** NanoHTTPD 服务端。 */
+    inner class HttpServer : NanoHTTPD("127.0.0.1", PORT) {
+        override fun serve(session: NanoHTTPD.IHTTPSession): Response {
+            return try {
+                when (session.uri) {
+                    "/health" -> newFixedLengthResponse(Response.Status.OK, "text/plain", "ok")
+                    "/tap" -> {
+                        val j = JSONObject(readBody(session))
+                        dispatchTap(j.getDouble("x").toFloat(), j.getDouble("y").toFloat())
+                        newFixedLengthResponse(Response.Status.OK, "text/plain", "ok")
+                    }
+                    "/swipe" -> {
+                        val j = JSONObject(readBody(session))
+                        val from = j.getJSONArray("from")
+                        val to = j.getJSONArray("to")
+                        dispatchSwipe(
+                            from.getDouble(0).toFloat(), from.getDouble(1).toFloat(),
+                            to.getDouble(0).toFloat(), to.getDouble(1).toFloat(),
+                            j.optLong("duration", 300L)
+                        )
+                        newFixedLengthResponse(Response.Status.OK, "text/plain", "ok")
+                    }
+                    else -> newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "not found")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "handle ${session.uri} failed", e)
+                newFixedLengthResponse(
+                    Response.Status.BAD_REQUEST, "text/plain",
+                    e.message ?: "bad request"
+                )
+            }
+        }
+    }
+
+    private fun readBody(session: NanoHTTPD.IHTTPSession): String {
+        val len = session.headers["content-length"]?.toIntOrNull() ?: 0
+        if (len <= 0) return ""
+        val bytes = ByteArray(len)
+        var off = 0
+        while (off < len) {
+            val n = session.inputStream.read(bytes, off, len - off)
+            if (n < 0) break
+            off += n
+        }
+        return String(bytes, 0, off, Charsets.UTF_8)
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         startServer()
@@ -33,34 +77,8 @@ class ClickServerService : AccessibilityService() {
 
     private fun startServer() {
         try {
-            val s = HttpServer.create(InetSocketAddress("127.0.0.1", PORT), 0)
-            s.executor = Executors.newFixedThreadPool(2)
-            s.createContext("/health") { ex -> respond(ex, 200, "ok") }
-            s.createContext("/tap") { ex ->
-                try {
-                    val j = JSONObject(ex.requestBody.readBytes().toString(Charsets.UTF_8))
-                    dispatchTap(j.getDouble("x").toFloat(), j.getDouble("y").toFloat())
-                    respond(ex, 200, "ok")
-                } catch (e: Exception) {
-                    respond(ex, 400, e.message ?: "bad request")
-                }
-            }
-            s.createContext("/swipe") { ex ->
-                try {
-                    val j = JSONObject(ex.requestBody.readBytes().toString(Charsets.UTF_8))
-                    val from = j.getJSONArray("from")
-                    val to = j.getJSONArray("to")
-                    dispatchSwipe(
-                        from.getDouble(0).toFloat(), from.getDouble(1).toFloat(),
-                        to.getDouble(0).toFloat(), to.getDouble(1).toFloat(),
-                        j.optLong("duration", 300L)
-                    )
-                    respond(ex, 200, "ok")
-                } catch (e: Exception) {
-                    respond(ex, 400, e.message ?: "bad request")
-                }
-            }
-            s.start()
+            val s = HttpServer()
+            s.start(SOCKET_READ_TIMEOUT, false)
             server = s
             Log.i(TAG, "ClickServer listening on 127.0.0.1:$PORT")
         } catch (e: Exception) {
@@ -87,22 +105,17 @@ class ClickServerService : AccessibilityService() {
         }
     }
 
-    private fun respond(ex: HttpExchange, code: Int, body: String) {
-        val bytes = body.toByteArray()
-        ex.sendResponseHeaders(code, bytes.size.toLong())
-        ex.responseBody.use { it.write(bytes) }
-    }
-
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
     override fun onInterrupt() = Unit
 
     override fun onDestroy() {
-        server?.stop(0)
+        server?.stop()
         super.onDestroy()
     }
 
     companion object {
         private const val TAG = "ClickServer"
         private const val PORT = 8123
+        private const val SOCKET_READ_TIMEOUT = 10_000
     }
 }
