@@ -1,0 +1,11 @@
+# shell 脚本必须 LF，Windows 上结账也保持 LF
+*.sh text eol=lf
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+*.kt text eol=lf
+*.py text eol=lf
+*.kts text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.xml text eol=lf
