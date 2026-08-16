@@ -1,0 +1,14 @@
+# 配置与密钥
+config.json
+*.env
+
+# 调试产物
+debug/
+__pycache__/
+*.pyc
+
+# 构建产物
+clickserver/build/
+clickserver/app/build/
+clickserver/.gradle/
+clickserver/local.properties

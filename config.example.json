@@ -1,0 +1,29 @@
+{
+  "glm": {
+    "api_key": "在这里填智谱GLM的key",
+    "model": "glm-4.6v-flash",
+    "base_url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    "timeout": 60
+  },
+  "deepseek": {
+    "api_key": "在这里填DeepSeek的key",
+    "model": "deepseek-chat",
+    "base_url": "https://api.deepseek.com/chat/completions",
+    "timeout": 60
+  },
+  "side": "red",
+  "screen_backend": "termux",
+  "input_backend": "clickserver",
+  "clickserver": {
+    "host": "127.0.0.1",
+    "port": 8123
+  },
+  "adb": {
+    "serial": ""
+  },
+  "board": null,
+  "poll_interval": 2.0,
+  "max_retries": 3,
+  "debug_dir": "debug",
+  "verbose": true
+}

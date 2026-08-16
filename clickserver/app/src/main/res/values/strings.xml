@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClickServer</string>
+    <string name="accessibility_description">为 Termux 象棋 Agent 提供屏幕点击与滑动手势（仅监听本机 127.0.0.1:8123 的 HTTP 指令）。</string>
+</resources>
